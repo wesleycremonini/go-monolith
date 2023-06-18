@@ -1,0 +1,4 @@
+github.com/alexedwards/flow v0.0.0-20220806114457-cf11be9e0e03 h1:r07xZN3ENBWdxGuU/feCsnpsgHJ7+3uLm7cq9S0sqoI=
+github.com/alexedwards/flow v0.0.0-20220806114457-cf11be9e0e03/go.mod h1:1rjOQiOqQlmMdUMuvlJFjldqTnE/tQULE7qPIu4aq3U=
+github.com/golang-jwt/jwt/v5 v5.0.0 h1:1n1XNM9hk7O9mnQoNBGolZvzebBQ7p93ULHRc28XJUE=
+github.com/golang-jwt/jwt/v5 v5.0.0/go.mod h1:pqrtFR0X4osieyHYxtmOUWsAWrfe1Q5UVIyoH402zdk=

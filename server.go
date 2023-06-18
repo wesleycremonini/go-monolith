@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"time"
 
 	"github.com/alexedwards/flow"
 )
@@ -39,15 +38,6 @@ func (a *App) recoverPanic(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
-}
-
-func (a *App) server(addr string) *http.Server {
-	return &http.Server{
-		Addr:         addr,
-		Handler:      a.routes(),
-		ReadTimeout:  time.Second * 5,
-		WriteTimeout: time.Second * 10,
-	}
 }
 
 func (a *App) status(w http.ResponseWriter, r *http.Request) {

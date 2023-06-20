@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,6 +14,7 @@ import (
 	"time"
 
 	"github.com/alexedwards/flow"
+	"golang.org/x/exp/slog"
 )
 
 //go:embed public/*
@@ -22,11 +22,11 @@ var assetsFS embed.FS
 
 // MIDDELWARES ##########
 
-func (a *App) recoverPanic(next http.Handler) http.Handler {
+func (app *App) recoverPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				fmt.Println("Recovered from panic: ", err)
+				app.Log.Warn("Recovered from panic: ", err)
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			}
 		}()
@@ -35,7 +35,7 @@ func (a *App) recoverPanic(next http.Handler) http.Handler {
 	})
 }
 
-func (a *App) secureHeaders(next http.Handler) http.Handler {
+func (app *App) secureHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Referrer-Policy", "origin-when-cross-origin")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -48,12 +48,12 @@ func (a *App) secureHeaders(next http.Handler) http.Handler {
 
 // ROUTES ###########
 
-func (a *App) routes() *flow.Mux {
+func (app *App) routes() *flow.Mux {
 	mux := flow.New()
 
-	mux.Use(a.recoverPanic)
-	mux.Use(a.secureHeaders)
-	mux.Use(a.SessionManager.LoadAndSave)
+	mux.Use(app.recoverPanic)
+	mux.Use(app.secureHeaders)
+	mux.Use(app.SessionManager.LoadAndSave)
 
 	mux.Handle("/public/...", http.FileServer(http.FS(assetsFS)), "GET")
 
@@ -62,9 +62,9 @@ func (a *App) routes() *flow.Mux {
 	// GET	/user/login	userLogin	Display a HTML form for logging in a user
 	// POST	/user/login	userLoginPost	Authenticate and login the user
 
-	mux.HandleFunc("/status", a.status, "GET")
-	mux.HandleFunc("/", a.home, "GET")
-	mux.HandleFunc("/", a.newItem, "POST")
+	mux.HandleFunc("/status", app.status, "GET")
+	mux.HandleFunc("/", app.home, "GET")
+	mux.HandleFunc("/", app.newItem, "POST")
 
 	return mux
 }
@@ -89,7 +89,7 @@ func (app *App) userLogoutPost(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Logout the user...")
 }
 
-func (a *App) status(w http.ResponseWriter, r *http.Request) {
+func (app *App) status(w http.ResponseWriter, r *http.Request) {
 	res, _ := json.Marshal(map[string]string{
 		"status": "ok",
 	})
@@ -98,7 +98,7 @@ func (a *App) status(w http.ResponseWriter, r *http.Request) {
 	w.Write(res)
 }
 
-func (a *App) home(w http.ResponseWriter, r *http.Request) {
+func (app *App) home(w http.ResponseWriter, r *http.Request) {
 	items := map[string][]Item{
 		"Items": {
 			{X: "this is X", Y: "this is Y"},
@@ -116,7 +116,7 @@ func (a *App) home(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *App) newItem(w http.ResponseWriter, r *http.Request) {
+func (app *App) newItem(w http.ResponseWriter, r *http.Request) {
 	X := r.PostFormValue("X")
 	Y := r.PostFormValue("Y")
 	tmpl := template.Must(template.ParseFiles("./templates/base.html", "./templates/index.html"))
@@ -125,10 +125,10 @@ func (a *App) newItem(w http.ResponseWriter, r *http.Request) {
 
 // SERVER #########
 
-func (a *App) serve(addr string) error {
+func (app *App) serve(addr string) error {
 	srv := &http.Server{
 		Addr:         addr,
-		Handler:      a.routes(),
+		Handler:      app.routes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -141,9 +141,7 @@ func (a *App) serve(addr string) error {
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		s := <-quit
 
-		log.Println("shutting down server", map[string]string{
-			"signal": s.String(),
-		})
+		app.Log.Warn("shutting down server", slog.String("signal", s.String()))
 
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
@@ -151,7 +149,7 @@ func (a *App) serve(addr string) error {
 		shutdownError <- srv.Shutdown(ctx)
 	}()
 
-	log.Println("server started")
+	app.Log.Info("server started")
 	err := srv.ListenAndServe()
 	if !errors.Is(err, http.ErrServerClosed) {
 		return err
@@ -162,6 +160,6 @@ func (a *App) serve(addr string) error {
 		return err
 	}
 
-	log.Println("stopped server")
+	app.Log.Warn("stopped server")
 	return nil
 }

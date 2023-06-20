@@ -11,6 +11,7 @@ services:
     ports:
       - 80:80
     environment:
+      ADDR: :80
       DB_DSN: postgres://dev:dev@db:5432/dev?sslmode=disable
       REDIS_HOST: redis:6379
       REDIS_PASS: macaco

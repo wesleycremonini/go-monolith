@@ -1,2 +1,4 @@
+/tmp
+.envrc
 /public/global.css
 /public/tailwindcss

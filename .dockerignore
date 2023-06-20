@@ -1,0 +1,5 @@
+.envrc
+docker
+.gitignore
+.github
+!.dockerignore

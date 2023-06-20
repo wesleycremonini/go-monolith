@@ -1,3 +1,5 @@
+include .envrc
+
 ## help: print this help message
 .PHONY: help
 help:
@@ -9,12 +11,7 @@ help:
 run:
 	cd public && ./tailwindcss -i styles.css -o global.css --minify
 # ./tailwindcss -i styles.css -o global.css --watch
-	CGO_ENABLED=0 go run . -db-dsn="db/db.db"
-
-## db/sqlite: connect to the database using sqlite
-.PHONY: db/sqlite
-db/sqlite:
-	sqlite3 db/db.db
+	CGO_ENABLED=0 go run ./app -db-dsn=${DB_DSN} -redis-host=${REDIS_HOST} -redis-pass=${REDIS_PASS}
 
 ## db/migrations/new name=$1: create a new database migration
 .PHONY: db/migrations/new
@@ -26,7 +23,7 @@ db/migrations/new:
 .PHONY: db/migrations/up
 db/migrations/up:
 	@echo 'Running up migrations...'
-	migrate -path ./db/migrations -database sqlite://db/db.db up
+	migrate -path ./db/migrations -database ${DB_DSN} up
 
 ## audit: tidy dependencies, format, vet and test all code
 .PHONY: audit

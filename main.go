@@ -1,40 +1,55 @@
 package main
 
 import (
-	"database/sql"
 	"flag"
 	"log"
-	"net/http"
 	"time"
+	"wesleycremonini/go-monolith-template/internal/database"
+
+	"github.com/alexedwards/scs/redisstore"
+	"github.com/alexedwards/scs/v2"
+	"github.com/gomodule/redigo/redis"
 )
 
 type App struct {
 	Logger         any
-	DB             *sql.DB
-	SessionManager any
+	DB             *database.DB
+	SessionManager *scs.SessionManager
 }
 
 func main() {
-	addr := flag.String("addr", ":3000", "HTTP network address")
-	dbDsn := flag.String("db_dsn", "db/db.db", "DB DSN")
+	addr := flag.String("addr", ":80", "HTTP network address")
+	dbDsn := flag.String("db-dsn", "", "DB DSN")
+	redisHost := flag.String("redis-host", "", "Redis host")
+	redisPass := flag.String("redis-pass", "", "Redis password")
 
-	db, err := connectDB(*dbDsn)
+	db, err := database.Connect(*dbDsn)
 	if err != nil {
-		log.Fatal("cant start server", err)
+		log.Fatal("cant connect to db: ", err)
 	}
 	defer db.Close()
 
-	app := &App{DB: db}
+	db.Config().MaxConnIdleTime = 5 * time.Minute
+	db.Config().MaxConnLifetime = 2 * time.Hour
+	db.Config().MaxConns = 25
+	db.Config().MinConns = 5
+	db.Config().HealthCheckPeriod = 1 * time.Minute
 
-	srv := &http.Server{
-		Addr:         *addr,
-		Handler:      app.routes(),
-		ReadTimeout:  time.Second * 5,
-		WriteTimeout: time.Second * 10,
+	redis := &redis.Pool{
+		MaxIdle: 10,
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial("tcp", *redisHost, redis.DialPassword(*redisPass))
+		},
 	}
 
-	err = srv.ListenAndServe()
+	sesM := scs.New()
+	sesM.Store = redisstore.New(redis)
+	sesM.Lifetime = 24 * time.Hour
+
+	app := &App{DB: db, SessionManager: sesM}
+
+	err = app.serve(*addr)
 	if err != nil {
-		log.Fatal("cant start server", err)
+		log.Fatal("cant start server: ", err)
 	}
 }

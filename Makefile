@@ -11,7 +11,7 @@ help:
 run:
 	cd public && ./tailwindcss -i styles.css -o global.css --minify
 # ./tailwindcss -i styles.css -o global.css --watch
-	CGO_ENABLED=0 go run ./app -db-dsn=${DB_DSN} -redis-host=${REDIS_HOST} -redis-pass=${REDIS_PASS}
+	ADDR=":3000" DB_DSN=${DB_DSN} REDIS_HOST=${REDIS_HOST} REDIS_PASS=${REDIS_PASS} CGO_ENABLED=0 go run .
 
 ## db/migrations/new name=$1: create a new database migration
 .PHONY: db/migrations/new

@@ -1,0 +1,43 @@
+version: '3.9'
+
+services:   
+  app:
+    hostname: app
+    container_name: app
+    image: cosmtrek/air
+    restart: unless-stopped
+    working_dir: /app
+    command: ["-c", "/app/docker/.air.toml"]
+    ports:
+      - 80:80
+    environment:
+      DB_DSN: postgres://dev:dev@db:5432/dev?sslmode=disable
+      REDIS_HOST: redis:6379
+      REDIS_PASS: macaco
+    volumes:
+      - ../:/app
+    depends_on:
+      - db
+      - redis
+
+  db:
+    container_name: db
+    hostname: db
+    restart: unless-stopped
+    image: postgres
+    volumes:
+      - ./pg:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: dev
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+    ports:
+      - "5432:5432"
+
+  redis:
+    container_name: redis
+    hostname: redis
+    restart: unless-stopped
+    image: redis
+    volumes:
+      - ./redis:/data

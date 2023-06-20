@@ -17,5 +17,10 @@ func Connect(dsn string) (*DB, error) {
 		return nil, err
 	}
 
+	err = db.Ping(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+
 	return &DB{db}, nil
 }

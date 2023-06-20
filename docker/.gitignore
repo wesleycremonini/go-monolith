@@ -3,3 +3,4 @@
 !Dockerfile.prod
 !.air.toml
 !.gitignore
+!.dockerignore

@@ -2,4 +2,6 @@
 docker
 .gitignore
 .github
+/public/global.css
+/public/tailwindcss
 !.dockerignore

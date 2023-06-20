@@ -8,6 +8,7 @@ require (
 	github.com/alexedwards/scs/v2 v2.5.1
 	github.com/gomodule/redigo v1.8.9
 	github.com/jackc/pgx/v5 v5.4.1
+	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 )
 
 require (

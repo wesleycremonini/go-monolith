@@ -2,9 +2,11 @@ package main
 
 import (
 	"flag"
+	"html/template"
 	"os"
 	"time"
 	"wesleycremonini/go-monolith-template/internal/database"
+	"wesleycremonini/go-monolith-template/internal/models"
 
 	"github.com/alexedwards/scs/redisstore"
 	"github.com/alexedwards/scs/v2"
@@ -13,9 +15,13 @@ import (
 )
 
 type App struct {
-	Log            *slog.Logger
-	DB             *database.DB
-	SessionManager *scs.SessionManager
+	log            *slog.Logger
+	db             *database.DB
+	sessionManager *scs.SessionManager
+	redis          *redis.Pool
+	templateCache  map[string]*template.Template
+
+	users *models.Users
 }
 
 func main() {
@@ -40,21 +46,32 @@ func main() {
 	db.Config().MinConns = 5
 	db.Config().HealthCheckPeriod = 1 * time.Minute
 
-	redis := &redis.Pool{
+	redisPool := &redis.Pool{
 		MaxIdle: 10,
 		Dial: func() (redis.Conn, error) {
 			return redis.Dial("tcp", *redisHost, redis.DialPassword(*redisPass))
 		},
 	}
+	defer redisPool.Close()
 
 	sesM := scs.New()
-	sesM.Store = redisstore.New(redis)
+	sesM.Store = redisstore.New(redisPool)
 	sesM.Lifetime = 24 * time.Hour
 
+	tmplCache, err := newTemplateCache()
+	if err != nil {
+		logger.Error("cant cache templates: " + err.Error())
+		return
+	}
+
 	app := &App{
-		DB:             db,
-		SessionManager: sesM,
-		Log:            logger,
+		db:             db,
+		redis:          redisPool,
+		sessionManager: sesM,
+		log:            logger,
+		templateCache:  tmplCache,
+
+		users: &models.Users{Pool: db.Pool},
 	}
 
 	err = app.serve(*addr)

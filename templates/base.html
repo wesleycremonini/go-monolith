@@ -1,23 +1,26 @@
 {{ define "base" }}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 	<head>
-		<meta charset="UTF-8" />
+		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<link href="/public/global.css" rel="stylesheet" />
 
 		<script src="/public/htmx.min.js"></script>
 		<script src="https://unpkg.com/hyperscript.org@0.9.8"></script>
-		<title>Go</title>
+		<title>{{template "title" .}}</title>
 	</head>
-
 	<body>
 		<div class="container mx-auto mt-10">
-			<h1 class="font-bold text-xl">Go</h1>
+			<header>
+				<h1 class="font-bold text-xl"><a href="/">Go</a></h1>
+			</header>
+			{{template "nav" .}} 
 			{{with .Flash}}
-				<div class="flash">{{.}}</div>
+			<div class="flash">{{.}}</div>
 			{{end}}
 			<main class="mt-10">{{ template "main" . }}</main>
+			<footer>Created by <a href="https://github.com/wesleycremonini">Wesley</a></footer>
 		</div>
 	</body>
 </html>

@@ -1,6 +1,15 @@
+{{define "title"}}Home{{end}}
+
 {{ define "main" }}
 
-<h1>Add Items</h1>
+<ul class="mt-5" id="items">
+	{{ range .Items }}
+		{{ block "items-element" .}}
+			<li>{{ .X }} - {{ .Y }}</li>
+		{{ end }}
+	{{ end }}
+</ul>
+
 <form hx-post="/" hx-target="#items" hx-swap="beforeend" hx-indicator="#spinner">
 	<div class="mb-2">
 		<label class="block text-sm font-medium text-gray-700">X</label>
@@ -18,13 +27,5 @@
 		<div class="inline-flex animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
 	</div>
 </form>
-
-<ul class="mt-5" id="items">
-	{{ range .Items }}
-		{{ block "items-element" .}}
-			<li>{{ .X }} - {{ .Y }}</li>
-		{{ end }}
-	{{ end }}
-</ul>
 
 {{ end }}

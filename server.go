@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"os"
 	"os/signal"
@@ -26,7 +25,7 @@ func (app *App) recoverPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				app.Log.Warn("Recovered from panic: ", err)
+				app.log.Warn("Recovered from panic: ", err)
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			}
 		}()
@@ -53,7 +52,7 @@ func (app *App) routes() *flow.Mux {
 
 	mux.Use(app.recoverPanic)
 	mux.Use(app.secureHeaders)
-	mux.Use(app.SessionManager.LoadAndSave)
+	mux.Use(app.sessionManager.LoadAndSave)
 
 	mux.Handle("/public/...", http.FileServer(http.FS(assetsFS)), "GET")
 
@@ -99,27 +98,18 @@ func (app *App) status(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *App) home(w http.ResponseWriter, r *http.Request) {
-	items := map[string][]Item{
+	app.render(w, http.StatusOK, "home.html", map[string][]Item{
 		"Items": {
 			{X: "this is X", Y: "this is Y"},
 			{X: "this is X2", Y: "this is Y2"},
 			{X: "this is X3", Y: "this is Y3"},
-		},
-	}
-
-	tmpl := template.Must(template.ParseFiles("./templates/base.html", "./templates/index.html"))
-
-	err := tmpl.ExecuteTemplate(w, "base", items)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+		}})
 }
 
 func (app *App) newItem(w http.ResponseWriter, r *http.Request) {
 	X := r.PostFormValue("X")
 	Y := r.PostFormValue("Y")
-	tmpl := template.Must(template.ParseFiles("./templates/base.html", "./templates/index.html"))
+	tmpl := app.templateCache["home.html"]
 	tmpl.ExecuteTemplate(w, "items-element", Item{X: X, Y: Y})
 }
 
@@ -141,7 +131,7 @@ func (app *App) serve(addr string) error {
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		s := <-quit
 
-		app.Log.Warn("shutting down server", slog.String("signal", s.String()))
+		app.log.Warn("shutting down server", slog.String("signal", s.String()))
 
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
@@ -149,7 +139,7 @@ func (app *App) serve(addr string) error {
 		shutdownError <- srv.Shutdown(ctx)
 	}()
 
-	app.Log.Info("server started")
+	app.log.Info("server started")
 	err := srv.ListenAndServe()
 	if !errors.Is(err, http.ErrServerClosed) {
 		return err
@@ -160,6 +150,6 @@ func (app *App) serve(addr string) error {
 		return err
 	}
 
-	app.Log.Warn("stopped server")
+	app.log.Warn("stopped server")
 	return nil
 }

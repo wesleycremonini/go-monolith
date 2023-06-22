@@ -21,7 +21,7 @@ FROM scratch
 COPY --from=build /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=build /go/bin/app /
+COPY --from=build /go/src/app/public /public
 COPY ../templates /templates
-COPY ../public /public
 
 ENTRYPOINT ["/app"]

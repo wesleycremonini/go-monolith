@@ -1,3 +1,4 @@
 export DB_DSN=postgres://dev:dev@localhost:5432/dev?sslmode=disable
 export REDIS_HOST=localhost:6379
 export REDIS_PASS=macaco
+export ADDR=:80

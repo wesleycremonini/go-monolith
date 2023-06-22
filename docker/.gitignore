@@ -1,6 +1,5 @@
-*
-!docker-compose.yml
-!Dockerfile.prod
-!.air.toml
+pg
+redis
+go.mod
 !.gitignore
 !.dockerignore
